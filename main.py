@@ -168,9 +168,6 @@ load_network_data()
 #                                FUNCTIONS TO USE                                     #
 # ----------------------------------------------------------------------------------- #
 #                                                                                     #
-# - load_network_data()               Loads the network's model and optimizer from    #
-#                                     ./results/model.pth and ./results.optimizer.pth #
-#                                                                                     #
 # - test_if_examples_loaded()         Show some examples from test_loader with ground #
 #                                     truth shown                                     #
 #                                                                                     #

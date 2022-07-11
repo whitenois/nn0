@@ -164,5 +164,23 @@ def test_on_random():
         plt.yticks([])
 
 load_network_data()
-test_on_random()
-show_result_graph()
+
+# ----------------------------------------------------------------------------------- #
+#                                FUNCTIONS TO USE                                     #
+# ----------------------------------------------------------------------------------- #
+#                                                                                     #
+# - load_network_data()               Loads the network's model and optimizer from    #
+#                                     ./results/model.pth and ./results.optimizer.pth #
+#                                                                                     #
+# - test_if_examples_loaded()         Show some examples from test_loader with ground #
+#                                     truth shown                                     #
+#                                                                                     #
+# - train_for_epochs(n)               Train for some amount of new epochs             #
+#                                                                                     #
+# - show_result_graph()               Show the graph of training examples seen and    #
+#                                     negative log likelihood loss, as long as the    #
+#                                     number of epochs                                #
+#                                                                                     #
+# - test_on_random()                  Test the net on six random examples             #
+#                                                                                     #
+#-------------------------------------------------------------------------------------#

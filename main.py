@@ -79,6 +79,12 @@ test_losses = lnc["test_losses"]
 test_counter = lnc["test_counter"]
 n_epochs = lnc["n_epochs"]
 
+def refresh_data():
+    with open("./losses_and_counters.json", "r") as fp:
+        lnc = json.load(fp)
+    with open("./losses_and_counters.json", "w") as fp:
+        json.dump(lnc, fp)
+
 network_state_dict = torch.load("./results/model.pth")
 network.load_state_dict(network_state_dict)
 
@@ -137,6 +143,7 @@ def train_for_epochs(n):
         train(i)
         test()
     n_epochs += n
+    refresh_data()
 
 def show_result_graph(show_from=0):
     global n_epochs
@@ -161,8 +168,6 @@ def test_on_random():
         plt.title("Prediction: {}".format(output.data.max(1, keepdim=True)[1][i].item()))
         plt.xticks([])
         plt.yticks([])
-
-load_network_data()
 
 # ----------------------------------------------------------------------------------- #
 #                                FUNCTIONS TO USE                                     #

@@ -9,7 +9,6 @@ import json
 
 # Declaring important variables
 
-n_epochs = 28
 batch_size_train = 64
 batch_size_test = 1000
 learning_rate = 0.01
@@ -78,13 +77,13 @@ train_losses = lnc["train_losses"]
 train_counter = lnc["train_counter"]
 test_losses = lnc["test_losses"]
 test_counter = lnc["test_counter"]
+n_epochs = lnc["n_epochs"]
 
-def load_network_data():
-    network_state_dict = torch.load("./results/model.pth")
-    network.load_state_dict(network_state_dict)
+network_state_dict = torch.load("./results/model.pth")
+network.load_state_dict(network_state_dict)
 
-    optimizer_state_dict = torch.load("./results/optimizer.pth")
-    optimizer.load_state_dict(optimizer_state_dict)
+optimizer_state_dict = torch.load("./results/optimizer.pth")
+optimizer.load_state_dict(optimizer_state_dict)
 
 def test_if_examples_loaded():
     examples = enumerate(test_loader)

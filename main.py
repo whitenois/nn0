@@ -4,9 +4,12 @@ from torch import nn, optim
 from torch.nn import functional as F
 import torchvision
 import matplotlib.pyplot as plt
-from random import sample
+import random
+import json
 
-n_epochs = 3
+# Declaring important variables
+
+n_epochs = 28
 batch_size_train = 64
 batch_size_test = 1000
 learning_rate = 0.01
@@ -17,17 +20,23 @@ random_seed = 1
 torch.backends.cudnn.enabled = False
 torch.manual_seed(random_seed)
 
+# Declaring the train_loader
+# Downoading the data for training
+
 train_loader = torch.utils.data.DataLoader(
-    torchvision.datasets.MNIST('', train=True, download=True,
+    torchvision.datasets.MNIST('./', train=True, download=True,
                                transform=torchvision.transforms.Compose([
                                    torchvision.transforms.ToTensor(),
                                    torchvision.transforms.Normalize(
                                        (0.1307,), (0.3081,))
                                ])),
-	batch_size=batch_size_train, shuffle=True)
+    batch_size=batch_size_train, shuffle=True)
+
+# Declaring the test_loader
+# Dowloading the data for testing
 
 test_loader = torch.utils.data.DataLoader(
-    torchvision.datasets.MNIST('', train=False, download=True,
+    torchvision.datasets.MNIST('./', train=False, download=True,
                                transform=torchvision.transforms.Compose([
                                    torchvision.transforms.ToTensor(),
                                    torchvision.transforms.Normalize(
@@ -35,19 +44,7 @@ test_loader = torch.utils.data.DataLoader(
                                ])),
     batch_size=batch_size_test, shuffle=True)
 
-# Output the ground truth
-
-examples = enumerate(test_loader)
-batch_idx, (example_data, example_targets) = list(examples)[0]
-fig = plt.figure()
-for i in range(6):
-    plt.subplot(2, 3, i + 1)
-    plt.tight_layout()
-    plt.imshow(example_data[i][0], cmap='gray', interpolation='none')
-    plt.title(f"Ground Truth: {example_targets[i]}")
-    plt.xticks([])
-    plt.yticks([])
-    
+# Declaring the Net class
 
 class Net(nn.Module):
     def __init__(self):
@@ -67,13 +64,39 @@ class Net(nn.Module):
         x = self.fc2(x)
         return F.log_softmax(x)
 
+# Declaring the network
+
 network = Net()
 optimizer = optim.SGD(network.parameters(), lr=learning_rate, momentum=momentum)
 
-train_losses = []
-train_counter = []
-test_losses = []
-test_counter = [i*len(train_loader.dataset) for i in range(n_epochs + 1)]
+# Load losses and counters for the graph
+
+with open("./losses_and_counters.json", "r") as fp:
+    lnc = json.load(fp)
+
+train_losses = lnc["train_losses"]
+train_counter = lnc["train_counter"]
+test_losses = lnc["test_losses"]
+test_counter = lnc["test_counter"]
+
+def load_network_data():
+    network_state_dict = torch.load("./results/model.pth")
+    network.load_state_dict(network_state_dict)
+
+    optimizer_state_dict = torch.load("./results/optimizer.pth")
+    optimizer.load_state_dict(optimizer_state_dict)
+
+def test_if_examples_loaded():
+    examples = enumerate(test_loader)
+    batch_idx, (example_data, example_targets) = list(examples)[0]
+    fig = plt.figure()
+    for i in range(6):
+        plt.subplot(2, 3, i + 1)
+        plt.tight_layout()
+        plt.imshow(example_data[i][0], cmap='gray', interpolation='none')
+        plt.title(f"Ground Truth: {example_targets[i]}")
+        plt.xticks([])
+        plt.yticks([])
 
 def train(epoch):
     network.train()
@@ -108,62 +131,38 @@ def test():
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 
-test()
-for epoch in range(1, n_epochs + 1):
-    train(epoch)
-    test()
+def train_for_epochs(n):
+    global n_epochs
+    for i in range(n_epochs + 1, n_epochs + n + 1):
+        test_counter.append(i*len(train_loader.dataset))
+        train(i)
+        test()
+    n_epochs += n
 
-fig = plt.figure()
-plt.plot(train_counter, train_losses, color='blue')
-plt.scatter(test_counter, test_losses, color='red')
-plt.legend(['Train Loss', 'Test Loss'], loc='upper right')
-plt.xlabel('number of training examples seen')
-plt.ylabel('negative log likelihood loss')
+def show_result_graph(show_from=0):
+    global n_epochs
+    fig = plt.figure(figsize=(18, 12), dpi=400)
+    plt.plot(train_counter[show_from * 94:], train_losses[show_from * 94:], color='blue')
+    plt.scatter(test_counter[show_from:], test_losses[show_from:], color='red')
+    plt.legend(['Train Loss', 'Test Loss'], loc='upper right')
+    plt.xlabel('number of training examples seen')
+    plt.ylabel('negative log likelihood loss')
+    print(f"Epochs count: {n_epochs}")
 
-with torch.no_grad():
-    output = network(example_data)
-fig = plt.figure()
-for i in range(6):
-    plt.subplot(2,3,i+1)
-    plt.tight_layout()
-    plt.imshow(example_data[i][0], cmap='gray', interpolation='none')
-    plt.title("Prediction: {}".format(
-        output.data.max(1, keepdim=True)[1][i].item()))
-    plt.xticks([])
-    plt.yticks([])
+def test_on_random():    
+    examples = enumerate(test_loader)
+    batch_idx, (example_data, example_targets) = random.sample(list(examples), 1)[0]
+    with torch.no_grad():
+        output = network(example_data)
+    fig = plt.figure()
+    for i in range(6):
+        plt.subplot(2,3,i+1)
+        plt.tight_layout()
+        plt.imshow(example_data[i][0], cmap='gray', interpolation='none')
+        plt.title("Prediction: {}".format(output.data.max(1, keepdim=True)[1][i].item()))
+        plt.xticks([])
+        plt.yticks([])
 
-continued_network = Net()
-continued_optimizer = optim.SGD(network.parameters(), lr=learning_rate, momentum=momentum)
-
-network_state_dict = torch.load("./results/model.pth")
-continued_network.load_state_dict(network_state_dict)
-
-optimizer_state_dict = torch.load("./results/optimizer.pth")
-continued_optimizer.load_state_dict(optimizer_state_dict)
-
-for i in range(4,9):
-    test_counter.append(i*len(train_loader.dataset))
-    train(i)
-    test()
-
-fig = plt.figure()
-plt.plot(train_counter, train_losses, color='blue')
-plt.scatter(test_counter, test_losses, color='red')
-plt.legend(['Train Loss', 'Test Loss'], loc='upper right')
-plt.xlabel('number of training examples seen')
-plt.ylabel('negative log likelihood loss')
-
-examples = enumerate(test_loader)
-batch_idx, (example_data, example_targets) = random.sample(list(examples), 1)[0]
-with torch.no_grad():
-    output = network(example_data)
-fig = plt.figure()
-for i in range(6):
-    plt.subplot(2,3,i+1)
-    plt.tight_layout()
-    plt.imshow(example_data[i][0], cmap='gray', interpolation='none')
-    plt.title("Prediction: {}".format(output.data.max(1, keepdim=True)[1][i].item()))
-    plt.xticks([])
-    plt.yticks([])
-
-        
+load_network_data()
+test_on_random()
+show_result_graph()

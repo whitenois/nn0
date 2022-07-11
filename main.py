@@ -82,6 +82,11 @@ n_epochs = lnc["n_epochs"]
 def refresh_data():
     with open("./losses_and_counters.json", "r") as fp:
         lnc = json.load(fp)
+        lnc["train_losses"] = train_losses
+        lnc["train_counter"] = train_counter
+        lnc["test_losses"] = test_losses
+        lnc["test_counter"] = test_counter
+        lnc["n_epochs"] = n_epochs
     with open("./losses_and_counters.json", "w") as fp:
         json.dump(lnc, fp)
 
